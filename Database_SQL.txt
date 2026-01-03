@@ -1,0 +1,161 @@
+-- ==============================
+-- UIU Research Hub Database
+-- ==============================
+
+CREATE DATABASE IF NOT EXISTS uiu_research_hub
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE uiu_research_hub;
+
+-- ==============================
+-- 1. Research Categories
+-- ==============================
+CREATE TABLE research_categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(50) NOT NULL UNIQUE,
+    category_description TEXT
+) ENGINE=InnoDB;
+
+INSERT INTO research_categories (category_name) VALUES
+('Artificial Intelligence'),
+('Data Science'),
+('Robotics & IoT'),
+('Cyber Security'),
+('Natural Language Processing'),
+('Software Engineering');
+
+-- ==============================
+-- 2. Users
+-- ==============================
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('student', 'faculty', 'admin') DEFAULT 'student',
+    dept VARCHAR(50),
+    bio TEXT,
+    profile_pic VARCHAR(255) DEFAULT 'default_user.png',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ==============================
+-- 3. Teams (Research Projects)
+-- ==============================
+CREATE TABLE teams (
+    team_id INT AUTO_INCREMENT PRIMARY KEY,
+    team_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    category_id INT,
+    leader_id INT NOT NULL,
+    status ENUM('active', 'completed', 'archived') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_team_category
+        FOREIGN KEY (category_id)
+        REFERENCES research_categories(category_id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_team_leader
+        FOREIGN KEY (leader_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ==============================
+-- 4. Team Members
+-- ==============================
+CREATE TABLE team_members (
+    team_id INT NOT NULL,
+    user_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (team_id, user_id),
+
+    CONSTRAINT fk_member_team
+        FOREIGN KEY (team_id)
+        REFERENCES teams(team_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_member_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ==============================
+-- 5. Join Requests
+-- ==============================
+CREATE TABLE join_requests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT NOT NULL,
+    user_id INT NOT NULL,
+    message TEXT,
+    status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
+    request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_request_team
+        FOREIGN KEY (team_id)
+        REFERENCES teams(team_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_request_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_team_user UNIQUE (team_id, user_id)
+) ENGINE=InnoDB;
+
+-- ==============================
+-- 6. Messages
+-- ==============================
+CREATE TABLE messages (
+    msg_id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    message_content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_msg_sender
+        FOREIGN KEY (sender_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_msg_receiver
+        FOREIGN KEY (receiver_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ==============================
+-- 7. Resources
+-- ==============================
+CREATE TABLE resources (
+    resource_id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT NOT NULL,
+    uploader_id INT NOT NULL,
+    file_title VARCHAR(255),
+    file_path VARCHAR(255),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_resource_team
+        FOREIGN KEY (team_id)
+        REFERENCES teams(team_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_resource_user
+        FOREIGN KEY (uploader_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ==============================
+-- Indexes for Performance
+-- ==============================
+CREATE INDEX idx_team_category ON teams(category_id);
+CREATE INDEX idx_team_leader ON teams(leader_id);
+CREATE INDEX idx_member_user ON team_members(user_id);
+CREATE INDEX idx_request_user ON join_requests(user_id);
