@@ -69,7 +69,8 @@ Entry page:
 Create an account from:
 - `signup.php`
 
-## Notes
+## License → MIT — see LICENSE.
 
+## Notes
 - Additional setup/database details are in `SETUP_GUIDE.md` and `DATABASE_DOCUMENTATION.md`.
 - File uploads are stored in `uploads/` (make sure it exists and is writable on your system).
